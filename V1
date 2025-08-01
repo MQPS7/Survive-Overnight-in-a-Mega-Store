@@ -941,6 +941,11 @@ local DropObject = game:GetService("ReplicatedStorage"):WaitForChild("Remotes"):
 
 local OldPosition_CFrame = HMNRT.CFrame
 
+
+
+local BringMode_Active = false
+local CurrentBringThread = nil
+
 local function BringItemWithItem2(item2)
 	pcall(function()
 		HMNRT.CFrame = item2.PrimaryPart.CFrame
@@ -949,7 +954,7 @@ local function BringItemWithItem2(item2)
 		wait(0.1)
 		HMNRT.CFrame = OldPosition_CFrame
 		wait(0.1)
-		DropObject:InvokeServer(CFrame.new(HMNRT.Position.X, HMNRT.Position.Y, HMNRT.Position.Z + 7, 1, 0, 0, 0, 1, 0, 0, 0, 1))
+		DropObject:InvokeServer(CFrame.new(HMNRT.Position.X, HMNRT.Position.Y, HMNRT.Position.Z + 7))
 	end)
 end
 
@@ -957,20 +962,29 @@ local ModeDragLine_2 = Create_Line(ModeDrag_SelectFuntion, "ไอเท็ม�
 
 local MetalBring_Button = Create_Click(ModeDrag_SelectFuntion, "แผ่นเหล็ก 🔗")
 MetalBring_Button.Activated:Connect(function()
-	OldPosition_CFrame = HMNRT.CFrame
-	local Bring_Count_Work = 0
-	for _, item2 in ipairs(Objects:GetChildren()) do
-		if matchesAllowedKeyword(item2.Name, {"BigMetal", "SmallMetal"}) and item2.PrimaryPart then
-			if Bring_Count_Work < Bring_Count then
-				BringItemWithItem2(item2)
-				Bring_Count_Work = Bring_Count_Work + 1
+	BringMode_Active = not BringMode_Active
+	if BringMode_Active then
+		OldPosition_CFrame = HMNRT.CFrame
+		CurrentBringThread = task.spawn(function()
+			local Bring_Count_Work = 0
+			for _, item2 in ipairs(Objects:GetChildren()) do
+				if not BringMode_Active then break end
+				if matchesAllowedKeyword(item2.Name, {"BigMetal", "SmallMetal"}) and item2.PrimaryPart then
+					if Bring_Count_Work < Bring_Count then
+						BringItemWithItem2(item2)
+						Bring_Count_Work += 1
+					end
+				end
 			end
-		end
-	end
-	if OldPosition_CFrame then
-		HMNRT.CFrame = OldPosition_CFrame
+			if OldPosition_CFrame then
+				HMNRT.CFrame = OldPosition_CFrame
+			end
+			BringMode_Active = false
+		end)
 	end
 end)
+
+local BringStates = {}
 
 local function ResetAllItemInServer()
 	for _, item in ipairs(ModeDrag_SelectFuntion:GetChildren()) do
@@ -980,21 +994,29 @@ local function ResetAllItemInServer()
 		wait()
 	end
 	for _, item in ipairs(Objects:GetChildren()) do
-		if not ModeDrag_SelectFuntion:FindFirstChild("Reset_"..item.Name) then
+		local keyName = "Reset_" .. item.Name
+		if not ModeDrag_SelectFuntion:FindFirstChild(keyName) then
 			local NewBring_Button = Create_Click(ModeDrag_SelectFuntion, item.Name, "Reset_")
 			NewBring_Button.Activated:Connect(function()
-				OldPosition_CFrame = HMNRT.CFrame
-				local Bring_Count_Work = 0
-				for _, item2 in ipairs(Objects:GetChildren()) do
-					if item2.Name == item.Name and item2.PrimaryPart then
-						if Bring_Count_Work < Bring_Count then
-							BringItemWithItem2(item2)
-							Bring_Count_Work = Bring_Count_Work + 1
+				BringStates[item.Name] = not BringStates[item.Name]
+				if BringStates[item.Name] then
+					OldPosition_CFrame = HMNRT.CFrame
+					task.spawn(function()
+						local Bring_Count_Work = 0
+						for _, item2 in ipairs(Objects:GetChildren()) do
+							if not BringStates[item.Name] then break end
+							if item2.Name == item.Name and item2.PrimaryPart then
+								if Bring_Count_Work < Bring_Count then
+									BringItemWithItem2(item2)
+									Bring_Count_Work += 1
+								end
+							end
 						end
-					end
-				end
-				if OldPosition_CFrame then
-					HMNRT.CFrame = OldPosition_CFrame
+						if OldPosition_CFrame then
+							HMNRT.CFrame = OldPosition_CFrame
+						end
+						BringStates[item.Name] = false
+					end)
 				end
 			end)
 		end
@@ -1004,6 +1026,7 @@ end
 ModeDrag.Activated:Connect(function()
 	ResetAllItemInServer()
 end)
+
 
 ---***** ModeDrag2_SelectFuntion ******----
 
