@@ -401,7 +401,11 @@ ModePlayer, ModePlayer_SelectFuntion = Create_ModeButton(" ผู้เล่น
 
 ModeAuto, ModeAuto_SelectFuntion = Create_ModeButton(" อัตโนมัติ ⚡ ")
 
-ModeDrag, ModeDrag_SelectFuntion = Create_ModeButton(" ดึงของ / ย้าย 📦 ")
+ModeDrag, ModeDrag_SelectFuntion = Create_ModeButton(" ดึงฟอนิเจอร์ 🪑 ")
+
+ModeDrag2, ModeDrag2_SelectFuntion = Create_ModeButton(" ดึงอาหาร 🍖 ")
+
+ModeEsp, ModeEsp_SelectFuntion = Create_ModeButton(" การมองเห็น 👁️ ")
 
 ---- End!!
 
@@ -845,33 +849,6 @@ task.spawn(function()
 	end
 end)
 
-local TurnLight_Button = Create_Toggle(ModePlayer_SelectFuntion, "เปิดไฟทั้งหมด")
-local TurnLight = false;TurnLight_Button.Activated:Connect(function()
-	if TurnLight == false then
-		TurnLight = true
-	else
-		TurnLight = false
-	end	
-end)
-task.spawn(function()--workspace.Map.Util.NewLights:GetChildren()[16].SpotLight
-	local NewLights = workspace:WaitForChild("Map"):WaitForChild("Util"):FindFirstChild("NewLights")
-	while wait(5) do
-		if TurnLight == true then
-			for _, item in ipairs() do
-				if item:FindFirstChild("SpotLight") then
-					pcall(function()
-						local SpotLight = item:FindFirstChild("SpotLight")
-						SpotLight.Enabled = true
-						SpotLight.Angle = 150
-						SpotLight.Brightness = 2
-						SpotLight.Range = 50
-					end)
-				end
-			end
-		end
-	end
-end)
-
 local AutoFillHunger = false ; local Auto_FOOD = false
 local AutoFillHunger_Button = Create_Toggle(ModeAuto_SelectFuntion, "กินข้าวออโต้ 🍔")
 AutoFillHunger_Button.Activated:Connect(function()
@@ -881,6 +858,7 @@ AutoFillHunger_Button.Activated:Connect(function()
 		AutoFillHunger = false
 	end	
 end)
+
 task.spawn(function()
 	local Equipped = game:GetService("ReplicatedStorage"):WaitForChild("Remotes"):WaitForChild("Item"):WaitForChild("Equipped")
 	local Activated = game:GetService("ReplicatedStorage"):WaitForChild("Remotes"):WaitForChild("Item"):WaitForChild("Activated")
@@ -919,7 +897,9 @@ task.spawn(function()
 	end
 end)
 
-local ModeDragLine_6 = Create_Line(ModeDrag_SelectFuntion, "ตั้งค่า 📦")
+---***** ModeDrag_SelectFuntion ******----
+
+local ModeDragLine_2 = Create_Line(ModeDrag_SelectFuntion, "ตั้งค่า ⚙️")
 
 local Bring_Count = 100 ; local Max_Bring_Count = 100
 local Bring_Count_SlideBar, Bring_Count_Bar, Bring_Count_TextBox, Bring_Count_ShowValue, Bring_Count_Color, Bring_Count_ResetButton = Create_Slide_Textbox(ModeDrag_SelectFuntion, "จำนวนที่ต้องการดึง", "ใส่ค่าที่ต้องการเลยครับ", Bring_Count)
@@ -964,16 +944,33 @@ local OldPosition_CFrame = HMNRT.CFrame
 local function BringItemWithItem2(item2)
 	pcall(function()
 		HMNRT.CFrame = item2.PrimaryPart.CFrame
-		wait(0.2)
+		wait(0.1)
 		RequestPickup:InvokeServer(item2)
-		wait(0.2)
+		wait(0.1)
 		HMNRT.CFrame = OldPosition_CFrame
-		wait(0.2)
-		DropObject:InvokeServer(CFrame.new(HMNRT.Position.X, HMNRT.Position.Y, HMNRT.Position.Z - 7, 1, 0, 0, 0, 1, 0, 0, 0, 1))
+		wait(0.1)
+		DropObject:InvokeServer(CFrame.new(HMNRT.Position.X, HMNRT.Position.Y, HMNRT.Position.Z + 7, 1, 0, 0, 0, 1, 0, 0, 0, 1))
 	end)
 end
 
 local ModeDragLine_2 = Create_Line(ModeDrag_SelectFuntion, "ไอเท็มที่มีขณะนี้ 📦")
+
+local MetalBring_Button = Create_Click(ModeDrag_SelectFuntion, "แผ่นเหล็ก 🔗")
+MetalBring_Button.Activated:Connect(function()
+	OldPosition_CFrame = HMNRT.CFrame
+	local Bring_Count_Work = 0
+	for _, item2 in ipairs(Objects:GetChildren()) do
+		if matchesAllowedKeyword(item2.Name, {"BigMetal", "SmallMetal"}) and item2.PrimaryPart then
+			if Bring_Count_Work < Bring_Count then
+				BringItemWithItem2(item2)
+				Bring_Count_Work = Bring_Count_Work + 1
+			end
+		end
+	end
+	if OldPosition_CFrame then
+		HMNRT.CFrame = OldPosition_CFrame
+	end
+end)
 
 local function ResetAllItemInServer()
 	for _, item in ipairs(ModeDrag_SelectFuntion:GetChildren()) do
@@ -1008,15 +1005,109 @@ ModeDrag.Activated:Connect(function()
 	ResetAllItemInServer()
 end)
 
+---***** ModeDrag2_SelectFuntion ******----
+
+local RequestPickupItem = game:GetService("ReplicatedStorage"):WaitForChild("Remotes"):WaitForChild("RequestPickupItem")
+
+local function BringItemWithItem3(item2)
+	pcall(function()
+		HMNRT.CFrame = item2.Handle.CFrame
+		wait(0.1)
+		RequestPickupItem:FireServer(item2)
+		wait(0.1)
+		HMNRT.CFrame = OldPosition_CFrame
+		wait(0.1)
+	end)
+end
+
+local ModeDragLine_2 = Create_Line(ModeDrag2_SelectFuntion, "ไอเท็มที่มีขณะนี้ 📦")
+
+local Items = workspace:WaitForChild("Map"):WaitForChild("Util"):WaitForChild("Items")
+
+local function ResetAllItemInServer2()
+	for _, item in ipairs(ModeDrag2_SelectFuntion:GetChildren()) do
+		if item:IsA("Frame") and matchesAllowedKeyword(item.Name, {"Reset_"}) then
+			item:Destroy()
+		end
+		wait()
+	end
+	for _, item in ipairs(Items:GetChildren()) do
+		if not ModeDrag2_SelectFuntion:FindFirstChild("Reset_"..item.Name) then
+			local NewBring_Button = Create_Click(ModeDrag2_SelectFuntion, item.Name, "Reset_")
+			NewBring_Button.Activated:Connect(function()
+				OldPosition_CFrame = HMNRT.CFrame
+				local Bring_Count_Work = 0
+				for _, item2 in ipairs(Items:GetChildren()) do
+					if item2.Name == item.Name and item2:FindFirstChild("Handle") then
+						if Bring_Count_Work < Bring_Count then
+							BringItemWithItem3(item2)
+							Bring_Count_Work = Bring_Count_Work + 1
+						end
+					end
+				end
+				if OldPosition_CFrame then
+					HMNRT.CFrame = OldPosition_CFrame
+				end
+			end)
+		end
+		wait()
+	end
+end
+ModeDrag2.Activated:Connect(function()
+	ResetAllItemInServer2()
+end)
+
+-----***** ModeEsp_SelectFuntion ******-----
+
+ModeMoreLine_1 = Create_Line(ModeEsp_SelectFuntion, "การมองเห็น 👁️")
+
+EspChest_Button = Create_Toggle(ModeEsp_SelectFuntion, "มองชื่อผู้เล่น")
+local EspChest = false;EspChest_Button.Activated:Connect(function()
+	if EspChest == false then
+		EspChest = true
+	else
+		EspChest = false
+		for _, OtherPlayer in ipairs(game:GetService("Players"):GetChildren()) do
+			if OtherPlayer ~= player and OtherPlayer.Character then
+				if OtherPlayer.Character:FindFirstChild("SOmtankChestESP") then
+					OtherPlayer.Character:FindFirstChild("SOmtankChestESP"):Destroy()
+				end
+				if OtherPlayer.Character:FindFirstChild("SOmtankChestBil") then
+					OtherPlayer.Character:FindFirstChild("SOmtankChestBil"):Destroy()
+				end
+			end
+		end
+	end	
+end)
+task.spawn(function()
+	while wait(6) do
+		if EspChest == true then
+			for _, OtherPlayer in ipairs(game:GetService("Players"):GetChildren()) do
+				if OtherPlayer ~= player and OtherPlayer.Character then
+					if not OtherPlayer:FindFirstChild("SOmtankChestESP") then
+						local NewHi = Instance.new("Highlight", OtherPlayer.Character)
+						local NewBil = Instance.new("BillboardGui", OtherPlayer.Character)
+						local NewText = Instance.new("TextLabel", NewBil)
+						NewHi.Name = "SOmtankChestESP"
+						NewBil.Name = "SOmtankChestBil"
+						NewHi.OutlineTransparency = 1
+						NewHi.FillColor = Color3.new(0.407843, 0.352941, 1)
+						NewText.BackgroundTransparency = 1
+						NewText.TextColor3 = Color3.new(0.415686, 0.184314, 1)
+						NewText.Text = OtherPlayer.Name
+						NewBil.Size = UDim2.new(0, 200,0, 50)
+						NewBil.SizeOffset = Vector2.new(0, 0.5)
+						NewBil.AlwaysOnTop = true
+						NewText.Size = UDim2.new(0, 200,0, 50)
+						NewText.TextYAlignment = Enum.TextYAlignment.Top
+						NewText.TextSize = 26
+						NewText.Font = Enum.Font.Highway
+					end
+				end
+			end
+		end	
+	end
+end)
+
 ------- ***** Start Script Loop *****
-
-
---workspace.Map.Util.Objects.SmallCrate
-
---workspace.Map.Util.Objects.BigMetal
-
---workspace.Map.Util.NewLights:GetChildren()[16].SpotLight
-
-
-
 
