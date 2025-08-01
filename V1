@@ -963,15 +963,14 @@ local OldPosition_CFrame = HMNRT.CFrame
 
 local function BringItemWithItem2(item2)
 	pcall(function()
-		
+		HMNRT.CFrame = item2.PrimaryPart.CFrame
+		wait(0.2)
+		RequestPickup:InvokeServer(item2)
+		wait(0.2)
+		HMNRT.CFrame = OldPosition_CFrame
+		wait(0.2)
+		DropObject:InvokeServer(CFrame.new(HMNRT.Position.X, HMNRT.Position.Y, HMNRT.Position.Z - 7, 1, 0, 0, 0, 1, 0, 0, 0, 1))
 	end)
-	HMNRT.CFrame = item2.PrimaryPart.CFrame
-	wait(0.2)
-	RequestPickup:InvokeServer(item2)
-	wait(0.2)
-	HMNRT.CFrame = OldPosition_CFrame
-	wait(0.2)
-	DropObject:InvokeServer(CFrame.new(HMNRT.Position.X, HMNRT.Position.Y, HMNRT.Position.Z - 7, 1, 0, 0, 0, 1, 0, 0, 0, 1))
 end
 
 local ModeDragLine_2 = Create_Line(ModeDrag_SelectFuntion, "ไอเท็มที่มีขณะนี้ 📦")
