@@ -935,13 +935,11 @@ local function SetSlider4(Bar, Slide, Defalse_Value, Color)
 end
 SetSlider4(Bring_Count_SlideBar, Bring_Count_Bar, Bring_Count, Bring_Count_Color)
 
-local Objects = workspace:WaitForChild("Map"):WaitForChild("Util"):WaitForChild("Objects")
+local Objects = workspace:WaitForChild("Map"):WaitForChild("Util"):FindFirstChild("Objects")
 local RequestPickup = game:GetService("ReplicatedStorage"):WaitForChild("Remotes"):FindFirstChild("RequestPickup")
 local DropObject = game:GetService("ReplicatedStorage"):WaitForChild("Remotes"):FindFirstChild("DropObject")
 
 local OldPosition_CFrame = HMNRT.CFrame
-
-
 
 local BringMode_Active = false
 local CurrentBringThread = nil
@@ -949,12 +947,13 @@ local CurrentBringThread = nil
 local function BringItemWithItem2(item2)
 	pcall(function()
 		HMNRT.CFrame = item2.PrimaryPart.CFrame
-		wait(0.1)
+		wait(0.2)
 		RequestPickup:InvokeServer(item2)
-		wait(0.1)
+		wait(0.2)
 		HMNRT.CFrame = OldPosition_CFrame
-		wait(0.1)
+		wait(0.2)
 		DropObject:InvokeServer(CFrame.new(HMNRT.Position.X, HMNRT.Position.Y, HMNRT.Position.Z + 7))
+		wait(0.2)
 	end)
 end
 
