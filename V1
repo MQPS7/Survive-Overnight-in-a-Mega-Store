@@ -2,6 +2,7 @@ TweenService = game:GetService("TweenService")
 Lighting = game:GetService("Lighting")
 replicatedStorage = game:GetService("ReplicatedStorage")
 UIS = game:GetService("UserInputService")
+RunService = game:GetService("RunService")
 
 player = game.Players.LocalPlayer
 character = player.Character
@@ -12,6 +13,10 @@ plrGui = player.PlayerGui
 
 local ScreenGui = Instance.new("ScreenGui");
 ScreenGui.Parent = plrGui
+
+if workspace:FindFirstChild("Map"):FindFirstChild("Util"):FindFirstChild("PlayerBlockedOnly") then
+	workspace:FindFirstChild("Map"):FindFirstChild("Util"):FindFirstChild("PlayerBlockedOnly"):Destroy()
+end
 
 
 local function MakeDraggableButton(button: ImageButton, MoveFrame)
@@ -297,7 +302,7 @@ end)
 
 local IconFrame = MakeImageLabel(MainFrame, UDim2.new(0, 32,0, 31), UDim2.new(0.017, 0,0.013, 0), 1, Color3.new(0.435294, 0.109804, 1), 0, "rbxassetid://80019916158199")
 local TitleText = MakeText(MainFrame, UDim2.new(0, 112,0, 32), UDim2.new(0.118, 0,0.013, 0), 1, Color3.new(0.466667, 0.286275, 1), true, "Somtank")
-local VersionText = MakeText(MainFrame, UDim2.new(0, 163,0, 20), UDim2.new(0.41, 0,0.054, 0), 1, Color3.new(0.466667, 0.286275, 1), true, "V0.0.1")
+local VersionText = MakeText(MainFrame, UDim2.new(0, 163,0, 20), UDim2.new(0.41, 0,0.054, 0), 1, Color3.new(0.466667, 0.286275, 1), true, "V0.0.2")
 local FOR_ICON = Instance.new("UIAspectRatioConstraint", IconFrame)
 TitleText.TextXAlignment = Enum.TextXAlignment.Left
 VersionText.TextXAlignment = Enum.TextXAlignment.Left
@@ -338,6 +343,7 @@ local function Create_ModeButton(Name)
 	local SelectFuntion = MakeScrolling(MainFrame, UDim2.new(0, 249,0, 247), UDim2.new(0.387, 0,0.144, 0), 1, Color3.new(0.0980392, 0.0745098, 0.219608), true, true)
 	SelectFuntion.Name = "SelectFuntion_" .. Name
 	SelectFuntion.Visible = false
+	SelectFuntion.CanvasSize = UDim2.new(0, 0, 10, 0)
 	Button1.Activated:Connect(function()
 		SelectMode_Now = MainButton1
 		for _, L in ipairs(SelectMode:GetChildren()) do
@@ -395,6 +401,8 @@ ModePlayer, ModePlayer_SelectFuntion = Create_ModeButton(" ผู้เล่น
 
 ModeAuto, ModeAuto_SelectFuntion = Create_ModeButton(" อัตโนมัติ ⚡ ")
 
+ModeDrag, ModeDrag_SelectFuntion = Create_ModeButton(" ดึงของ / ย้าย 📦 ")
+
 ---- End!!
 
 local function Create_Line(Parent, Name)
@@ -436,7 +444,7 @@ local function Create_Toggle(Parent, Name)
 	return Button1, TextMainButton1
 end
 
-local function Create_Click(Parent, Name)
+local function Create_Click(Parent, Name, Name2)
 	local MainButton1 = MakeFrame(ScreenGui, UDim2.new(0, 248,0, 36), UDim2.new(0, 0,0, 0), 0, Color3.new(0.141176, 0.12549, 0.368627), true, true)
 	local TextMainButton1 = MakeText(MainButton1, UDim2.new(0, 131,0, 28), UDim2.new(0.055, 0,0.076, 0), 1, Color3.new(0.529412, 0.313725, 1), true, Name)
 	local ColorMainButton1 = MakeFrame(MainButton1, UDim2.new(0, 8,0, 36), UDim2.new(0, 0,0, 0), 0, Color3.new(0.145098, 0.133333, 0.392157), true, true)
@@ -453,9 +461,12 @@ local function Create_Click(Parent, Name)
 	end)	
 	wait()
 	ColorMainButton1.Name = "Click_" .. Name
+	if Name2 then
+		MainButton1.Name = Name2..Name
+	end
 	MainButton1.Parent = Parent
 	MainButton1.Visible = true
-	return Button1, TextMainButton1
+	return Button1, TextMainButton1, MainButton1
 end
 
 local function Create_SelectPick(Parent, Name, CanvasSize)
@@ -615,17 +626,8 @@ local function SetSlider(Bar, Slide, Defalse_Value, Color)
 		local Set_Stop = false
 		local moveDirection = humanoid.MoveDirection
 		while wait(0.1) do
-			PlayerSpeed_ShowValue.Text = WalkSpeed--humanoid.WalkSpeed = WalkSpeed
-			if moveDirection.Magnitude > 0 and tonumber(PlayerSpeed_ShowValue.Text) ~= Defalse_Value then
-				Set_Stop = true
-				local velocity = moveDirection.Unit * WalkSpeed
-				HMNRT.AssemblyLinearVelocity = Vector3.new(velocity.X, HMNRT.AssemblyLinearVelocity.Y, velocity.Z)
-			else
-				if Set_Stop == true then
-					HMNRT.AssemblyLinearVelocity = Vector3.new(0, HMNRT.AssemblyLinearVelocity.Y, 0)
-					Set_Stop = false
-				end
-			end
+			PlayerSpeed_ShowValue.Text = WalkSpeed
+			humanoid.WalkSpeed = WalkSpeed
 			if tonumber(PlayerSpeed_ShowValue.Text) == Defalse_Value then
 				tweenButtonColor(Color, Color3.new(0.145098, 0.133333, 0.392157), 0.17)
 			else
@@ -771,15 +773,12 @@ function Fly()
 end
 
 local NoclipConnection = nil
-local ClipEnabled = true
 local originalCanCollideMap = {}
 function noclip()
-	ClipEnabled = false
 	if NoclipConnection then NoclipConnection:Disconnect() end
-	NoclipConnection = game:GetService("RunService").Stepped:Connect(function()
-		local char = game.Players.LocalPlayer.Character
-		if not ClipEnabled and char and char:IsDescendantOf(workspace) then
-			for _, part in ipairs(char:GetDescendants()) do
+	NoclipConnection = RunService.Stepped:Connect(function()
+		if character and character:IsDescendantOf(workspace) then
+			for _, part in ipairs(character:GetDescendants()) do
 				if part:IsA("BasePart") and part.CanCollide == true then
 					if originalCanCollideMap[part] == nil then
 						originalCanCollideMap[part] = true
@@ -795,7 +794,6 @@ function clip()
 		NoclipConnection:Disconnect()
 		NoclipConnection = nil
 	end
-	ClipEnabled = true
 	for part, wasCollidable in pairs(originalCanCollideMap) do
 		if wasCollidable and part and part:IsA("BasePart") then
 			part.CanCollide = true
@@ -807,10 +805,10 @@ local Noclip_Button = Create_Toggle(ModeAuto_SelectFuntion, "Noclip")
 local Noclip = true ; Noclip_Button.Activated:Connect(function()
 	if Noclip == false then
 		Noclip = true
-		noclip()
+		clip()
 	else
 		Noclip = false
-		clip()
+		noclip()
 	end
 end)
 local ModePlayer2 = Create_Line(ModePlayer_SelectFuntion, "แสงและเงา 💡")
@@ -842,13 +840,40 @@ task.spawn(function()
 			Lighting.ClockTime = 12
 		end
 		if Brightness == true then
-			Lighting.Brightness = 10
+			Lighting.Brightness = 2
+		end
+	end
+end)
+
+local TurnLight_Button = Create_Toggle(ModePlayer_SelectFuntion, "เปิดไฟทั้งหมด")
+local TurnLight = false;TurnLight_Button.Activated:Connect(function()
+	if TurnLight == false then
+		TurnLight = true
+	else
+		TurnLight = false
+	end	
+end)
+task.spawn(function()--workspace.Map.Util.NewLights:GetChildren()[16].SpotLight
+	local NewLights = workspace:WaitForChild("Map"):WaitForChild("Util"):FindFirstChild("NewLights")
+	while wait(5) do
+		if TurnLight == true then
+			for _, item in ipairs() do
+				if item:FindFirstChild("SpotLight") then
+					pcall(function()
+						local SpotLight = item:FindFirstChild("SpotLight")
+						SpotLight.Enabled = true
+						SpotLight.Angle = 150
+						SpotLight.Brightness = 2
+						SpotLight.Range = 50
+					end)
+				end
+			end
 		end
 	end
 end)
 
 local AutoFillHunger = false ; local Auto_FOOD = false
-local AutoFillHunger_Button = Create_Toggle(ModeAuto_SelectFuntion, "กินข้าวออโต้ 🤕")
+local AutoFillHunger_Button = Create_Toggle(ModeAuto_SelectFuntion, "กินข้าวออโต้ 🍔")
 AutoFillHunger_Button.Activated:Connect(function()
 	if AutoFillHunger == false then
 		AutoFillHunger = true
@@ -894,6 +919,105 @@ task.spawn(function()
 	end
 end)
 
+local ModeDragLine_6 = Create_Line(ModeDrag_SelectFuntion, "ตั้งค่า 📦")
+
+local Bring_Count = 100 ; local Max_Bring_Count = 100
+local Bring_Count_SlideBar, Bring_Count_Bar, Bring_Count_TextBox, Bring_Count_ShowValue, Bring_Count_Color, Bring_Count_ResetButton = Create_Slide_Textbox(ModeDrag_SelectFuntion, "จำนวนที่ต้องการดึง", "ใส่ค่าที่ต้องการเลยครับ", Bring_Count)
+local function SetSlider4(Bar, Slide, Defalse_Value, Color)
+	local slider_Bring_Count = createSlider(Bar, Slide, function(value)
+		Bring_Count = value;	Bring_Count_TextBox.Text = ""
+	end, 100)
+	slider_Bring_Count.SetValue(Bring_Count)
+	Bring_Count_TextBox.FocusLost:Connect(function(enterPressed)
+		local text = Bring_Count_TextBox.Text
+		local number = tonumber(text)
+		if number then
+			Bring_Count = number
+			slider_Bring_Count.SetValue(number)
+		else
+			Bring_Count_TextBox.Text = ""
+		end
+	end)
+	Bring_Count_ResetButton.Activated:Connect(function()
+		Bring_Count = 1
+		slider_Bring_Count.SetValue(1)
+	end)
+	task.spawn(function()
+		while wait(0.1) do
+			Bring_Count_ShowValue.Text = Bring_Count
+			if tonumber(Bring_Count_ShowValue.Text) == Max_Bring_Count then
+				tweenButtonColor(Color, Color3.new(0.145098, 0.133333, 0.392157), 0.17)
+			else
+				tweenButtonColor(Color, Color3.new(0.45098, 0, 1), 0.17)
+			end
+		end
+	end)
+end
+SetSlider4(Bring_Count_SlideBar, Bring_Count_Bar, Bring_Count, Bring_Count_Color)
+
+local Objects = workspace:WaitForChild("Map"):WaitForChild("Util"):WaitForChild("Objects")
+local RequestPickup = game:GetService("ReplicatedStorage"):WaitForChild("Remotes"):FindFirstChild("RequestPickup")
+local DropObject = game:GetService("ReplicatedStorage"):WaitForChild("Remotes"):FindFirstChild("DropObject")
+
+local OldPosition_CFrame = HMNRT.CFrame
+
+local function BringItemWithItem2(item2)
+	pcall(function()
+		
+	end)
+	HMNRT.CFrame = item2.PrimaryPart.CFrame
+	wait(0.2)
+	RequestPickup:InvokeServer(item2)
+	wait(0.2)
+	HMNRT.CFrame = OldPosition_CFrame
+	wait(0.2)
+	DropObject:InvokeServer(CFrame.new(HMNRT.Position.X, HMNRT.Position.Y, HMNRT.Position.Z - 7, 1, 0, 0, 0, 1, 0, 0, 0, 1))
+end
+
+local ModeDragLine_2 = Create_Line(ModeDrag_SelectFuntion, "ไอเท็มที่มีขณะนี้ 📦")
+
+local function ResetAllItemInServer()
+	for _, item in ipairs(ModeDrag_SelectFuntion:GetChildren()) do
+		if item:IsA("Frame") and matchesAllowedKeyword(item.Name, {"Reset_"}) then
+			item:Destroy()
+		end
+		wait()
+	end
+	for _, item in ipairs(Objects:GetChildren()) do
+		if not ModeDrag_SelectFuntion:FindFirstChild("Reset_"..item.Name) then
+			local NewBring_Button = Create_Click(ModeDrag_SelectFuntion, item.Name, "Reset_")
+			NewBring_Button.Activated:Connect(function()
+				OldPosition_CFrame = HMNRT.CFrame
+				local Bring_Count_Work = 0
+				for _, item2 in ipairs(Objects:GetChildren()) do
+					if item2.Name == item.Name and item2.PrimaryPart then
+						if Bring_Count_Work < Bring_Count then
+							BringItemWithItem2(item2)
+							Bring_Count_Work = Bring_Count_Work + 1
+						end
+					end
+				end
+				if OldPosition_CFrame then
+					HMNRT.CFrame = OldPosition_CFrame
+				end
+			end)
+		end
+		wait()
+	end
+end
+ModeDrag.Activated:Connect(function()
+	ResetAllItemInServer()
+end)
+
 ------- ***** Start Script Loop *****
+
+
+--workspace.Map.Util.Objects.SmallCrate
+
+--workspace.Map.Util.Objects.BigMetal
+
+--workspace.Map.Util.NewLights:GetChildren()[16].SpotLight
+
+
 
 
